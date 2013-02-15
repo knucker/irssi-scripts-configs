@@ -27,7 +27,7 @@ $VERSION = "0.1";
 );
 
 ## User need to modify this field with the FULL directory:
-my $PATH_TO = '/home/knucker/.irssi/'
+my $PATH_TO = "$ENV{HOME}/.irssi/"
 
 Irssi::settings_add_str('notify', 'private_icon', "$PATH_TO/chat-private-notify.png"); # Path to some image
 Irssi::settings_add_str('notify', 'user_icon', "$PATH_TO/chat-user-notify.png"); # Path to some image

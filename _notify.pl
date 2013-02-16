@@ -34,25 +34,12 @@ Irssi::settings_add_str('notify', 'user_icon', "$PATH_TO/chat-user-notify.png");
 Irssi::settings_add_str('notify', 'notify_time', '5000');
 
 sub notify {
-	my ($server, $summary, $message) = @_;
+	my ($server, $summary, $message, $who) = @_;
 	# Make the message entity-safe
+	$who = $who . '_icon';
 	$message =~ s/\\/\|/g;
 	my $cmd = "EXEC - notify-send" .
-	" -i " . Irssi::settings_get_str('private_icon') .
-	" -t " . Irssi::settings_get_str('notify_time') .
-	" '" . $summary . "'" .
-	" '" . $message . "'";
-	$server->command($cmd);
-	my $cmd_pin = "EXEC - mplayer $PATH_TO/pin_dropping.mp3 2&> /dev/null"; # Path to some sound
-	$server->command($cmd_pin);
-}
-
-sub notifyUser {
-	my ($server, $summary, $message) = @_;
-	# Make the message entity-safe
-	$message =~ s/\\/\|/g;
-	my $cmd = "EXEC - notify-send" .
-	" -i " . Irssi::settings_get_str('user_icon') .
+	" -i " . Irssi::settings_get_str( $who ) .
 	" -t " . Irssi::settings_get_str('notify_time') .
 	" '" . $summary . "'" .
 	" '" . $message . "'";
@@ -74,15 +61,14 @@ sub user_notify {
 	$nick =~ s/^[ ]+|[ ]+$//gi;
 	$msg  =~ s/^[ ]+|[ ]+$//gi;
 
-	notifyUser($server, "In ".$dest->{target}." message from ".$nick, $msg ); # $stripped);
+	notify($server, "In ".$dest->{target}." message from ".$nick, $msg, 'user'); # $stripped);
 }
-
 
 sub private_notify {
 	my ($server, $msg, $nick, $address) = @_;
 	return if (!$server);
 	$msg = encode_entities($msg);
-	notify($server, "Private message from ".$nick, $msg);
+	notify($server, "Private message from ".$nick, $msg, 'private');
 }
 
 Irssi::signal_add('print text', 'user_notify');

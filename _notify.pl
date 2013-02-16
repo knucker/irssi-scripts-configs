@@ -52,12 +52,12 @@ sub user_notify {
 	my ($dest, $text, $stripped) = @_;
 	my $server = $dest->{server};
 	return if (!$server || !($dest->{level} & MSGLEVEL_HILIGHT));
-	# Get Nick who is sent the message
+	# Get nickname of who is sending the message
 	my $index = index($stripped, '│'); # The simbol to be stripped depends of the theme
 	my $nick = substr $stripped, 0, $index;
 	my $msg = substr $stripped, $index+3;
 	$msg = encode_entities($msg);
-	# Clean whitespaces on the beginning and the end of the nick and message
+	# Clean the whitespaces in the beginning and the end of the message.
 	$nick =~ s/^[ ]+|[ ]+$//gi;
 	$msg  =~ s/^[ ]+|[ ]+$//gi;
 

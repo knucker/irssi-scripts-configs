@@ -1,12 +1,16 @@
 ##
 ## Put This in ~/.irssi/scriptsi/autorun/:
-## Execute into irssi:
+## Execute into irssi if do not auto load:
 ##	/load perl
 ##	/script load _notify.pl
+##	hilight <nick>
+##
+##	change PATH of icons and sound
+##	change REGEX on nick and msg to match with the theme
 ##
 ## Requisites:
-##	pkg: dunst and dunstify
-##	hilight <nick>
+##	pkg: mplayer, dunst and dunstify
+##
 ######
 ##	by Knucker
 ##
@@ -26,11 +30,11 @@ $VERSION = "0.2";
 	url         => '',
 );
 
-##
+## User need to modify this field with the FULL directory
 my $PATH_TO = "$ENV{HOME}/.irssi/";
 
-Irssi::settings_add_str('notify', 'private_icon',"$PATH_TO/chat-private-notify.png");
-Irssi::settings_add_str('notify', 'user_icon', "$PATH_TO/chat-user-notify.png");
+Irssi::settings_add_str('notify', 'private_icon',"$PATH_TO/chat-private-notify.png"); # PATH to some image
+Irssi::settings_add_str('notify', 'user_icon', "$PATH_TO/chat-user-notify.png"); # PATH to some image
 Irssi::settings_add_str('notify', 'notify_time', '5000');
 
 sub sanitize {
@@ -65,7 +69,7 @@ sub notify {
 	" '" . $message . "'";
 	$server->command($cmd);
 
-	my $cmd_pin = "EXEC - mplayer $PATH_TO/pin_dropping.mp3 &> /dev/null";
+	my $cmd_pin = "EXEC - mplayer $PATH_TO/pin_dropping.mp3 &> /dev/null"; # PATH to some sound
 	$server->command($cmd_pin);
 }
 
@@ -82,8 +86,9 @@ sub user_notify {
 	my $nick = $stripped;
 	my $msg = $stripped;
 
-	$nick =~ s/^\<([^\>]+)\>.+/\1/;
-	$msg =~ s/^\<[^\>]+\>//;
+	# EX.: < knucker > MESSAGE
+	$nick =~ s/^\<([^\>]+)\>.+/\1/; # The REGEX to be stripped depends of the theme (using: xchat.theme)
+	$msg =~ s/^\<[^\>]+\>//; # The REGEX to be stripped depends of the theme (using: xchat.theme)
 
 	# Clean whitespaces on the beginning and the end of the nick and message
 	$nick =~ s/^[ ]+|[ ]+$//gi;

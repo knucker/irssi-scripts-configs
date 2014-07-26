@@ -5,7 +5,7 @@
 ##	/script load _notify.pl
 ##
 ## Requisites:
-##	pkg: notification_daemon
+##	pkg: dunst and dunstify
 ##	hilight <nick>
 ######
 ##	by Knucker
@@ -16,50 +16,77 @@ use Irssi;
 use vars qw($VERSION %IRSSI);
 use HTML::Entities;
 
-$VERSION = "0.1";
+$VERSION = "0.2";
 %IRSSI = (
 	authors     => 'Knucker Blind',
-	contact     => 'www.knucker@gmail.com',
+	contact     => 'www.knucker [at] gmail.com',
 	name        => '_notify.pl',
 	description => 'Use libnotify to alert user to hilighted and private messages',
 	license     => 'GNU General Public License',
 	url         => '',
 );
 
-## User need to modify this field with the FULL directory:
-my $PATH_TO = "$ENV{HOME}/.irssi/"
+##
+my $PATH_TO = "$ENV{HOME}/.irssi/";
 
-Irssi::settings_add_str('notify', 'private_icon', "$PATH_TO/chat-private-notify.png"); # Path to some image
-Irssi::settings_add_str('notify', 'user_icon', "$PATH_TO/chat-user-notify.png"); # Path to some image
+Irssi::settings_add_str('notify', 'private_icon',"$PATH_TO/chat-private-notify.png");
+Irssi::settings_add_str('notify', 'user_icon', "$PATH_TO/chat-user-notify.png");
 Irssi::settings_add_str('notify', 'notify_time', '5000');
+
+sub sanitize {
+	my ($text) = @_;
+	encode_entities($text,'\'<>&');
+	my $apos = "&#39;";
+	my $aposenc = "\&apos;";
+	$text =~ s/$apos/$aposenc/g;
+	$text =~ s/"/\\"/g;
+	$text =~ s/\$/\\\$/g;
+	$text =~ s/`/\\"/g;
+	return $text;
+}
 
 sub notify {
 	my ($server, $summary, $message, $who) = @_;
-	# Make the message entity-safe
 	$who = $who . '_icon';
-	$message =~ s/\\/\|/g;
-	my $cmd = "EXEC - notify-send" .
+
+	# Clean whitespaces on the beginning and the end of the message
+	$message =~ s/^[ ]+|[ ]+$//gi;
+	$message =~ s/[ ]+/ /gi;
+
+	# Make the message entity-safe
+	$message = sanitize( $message );
+	$summary = sanitize( $summary );
+
+	my $appname = "irssi";
+	my $cmd = "EXEC - dunstify" .
+	" -a " . $appname .
 	" -i " . Irssi::settings_get_str( $who ) .
-	" -t " . Irssi::settings_get_str('notify_time') .
-	" '" . $summary . "'" .
+	" '" . $summary . "'".
 	" '" . $message . "'";
 	$server->command($cmd);
-	my $cmd_pin = "EXEC - mplayer $PATH_TO/pin_dropping.mp3 2&> /dev/null"; # Path to some sound
+
+	my $cmd_pin = "EXEC - mplayer $PATH_TO/pin_dropping.mp3 &> /dev/null";
 	$server->command($cmd_pin);
 }
 
 sub user_notify {
 	my ($dest, $text, $stripped) = @_;
 	my $server = $dest->{server};
+
 	return if (!$server || !($dest->{level} & MSGLEVEL_HILIGHT));
-	# Get nickname of who is sending the message
-	my $index = index($stripped, '│'); # The simbol to be stripped depends of the theme
-	my $nick = substr $stripped, 0, $index;
-	my $msg = substr $stripped, $index+3;
-	$msg = encode_entities($msg);
-	# Clean the whitespaces in the beginning and the end of the message.
+
+	print( "Text: " . $text );
+	print( "Stripped: " . $stripped );
+
+	# Get Nick who is sent the message
+	my $nick = $stripped;
+	my $msg = $stripped;
+
+	$nick =~ s/^\<([^\>]+)\>.+/\1/;
+	$msg =~ s/^\<[^\>]+\>//;
+
+	# Clean whitespaces on the beginning and the end of the nick and message
 	$nick =~ s/^[ ]+|[ ]+$//gi;
-	$msg  =~ s/^[ ]+|[ ]+$//gi;
 
 	notify($server, "In ".$dest->{target}." message from ".$nick, $msg, 'user'); # $stripped);
 }
@@ -67,7 +94,10 @@ sub user_notify {
 sub private_notify {
 	my ($server, $msg, $nick, $address) = @_;
 	return if (!$server);
-	$msg = encode_entities($msg);
+
+	# Clean whitespaces on the beginning and the end of the nick and message
+	$nick =~ s/^[ ]+|[ ]+$//gi;
+
 	notify($server, "Private message from ".$nick, $msg, 'private');
 }
 

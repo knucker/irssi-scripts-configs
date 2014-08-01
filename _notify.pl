@@ -1,16 +1,13 @@
 ##
 ## Put This in ~/.irssi/scriptsi/autorun/:
-## Execute into irssi if do not auto load:
+## Execute into irssi:
 ##	/load perl
 ##	/script load _notify.pl
-##	hilight <nick>
-##
-##	change PATH of icons and sound
-##	change REGEX on nick and msg to match with the theme
 ##
 ## Requisites:
-##	pkg: mplayer, dunst and dunstify
-##
+##	pkg: dunst (recommended: dunstify)
+##		 libnotify
+##	hilight <nick>
 ######
 ##	by Knucker
 ##
@@ -30,11 +27,11 @@ $VERSION = "0.2";
 	url         => '',
 );
 
-## User need to modify this field with the FULL directory
+##
 my $PATH_TO = "$ENV{HOME}/.irssi/";
 
-Irssi::settings_add_str('notify', 'private_icon',"$PATH_TO/chat-private-notify.png"); # PATH to some image
-Irssi::settings_add_str('notify', 'user_icon', "$PATH_TO/chat-user-notify.png"); # PATH to some image
+Irssi::settings_add_str('notify', 'private_icon',"$PATH_TO/chat-private-notify.png");
+Irssi::settings_add_str('notify', 'user_icon', "$PATH_TO/chat-user-notify.png");
 Irssi::settings_add_str('notify', 'notify_time', '5000');
 
 sub sanitize {
@@ -61,15 +58,17 @@ sub notify {
 	$message = sanitize( $message );
 	$summary = sanitize( $summary );
 
+	# my $notify = "dunstify";
+	my $notify = "notify-send";
 	my $appname = "irssi";
-	my $cmd = "EXEC - dunstify" .
+	my $cmd = "EXEC - " . $notify .
 	" -a " . $appname .
 	" -i " . Irssi::settings_get_str( $who ) .
 	" '" . $summary . "'".
 	" '" . $message . "'";
 	$server->command($cmd);
 
-	my $cmd_pin = "EXEC - mplayer $PATH_TO/pin_dropping.mp3 &> /dev/null"; # PATH to some sound
+	my $cmd_pin = "EXEC - mplayer $PATH_TO/pin_dropping.mp3 &> /dev/null";
 	$server->command($cmd_pin);
 }
 
@@ -86,9 +85,8 @@ sub user_notify {
 	my $nick = $stripped;
 	my $msg = $stripped;
 
-	# EX.: < knucker > MESSAGE
-	$nick =~ s/^\<([^\>]+)\>.+/\1/; # The REGEX to be stripped depends of the theme (using: xchat.theme)
-	$msg =~ s/^\<[^\>]+\>//; # The REGEX to be stripped depends of the theme (using: xchat.theme)
+	$nick =~ s/^\<([^\>]+)\>.+/\1/;
+	$msg =~ s/^\<[^\>]+\>//;
 
 	# Clean whitespaces on the beginning and the end of the nick and message
 	$nick =~ s/^[ ]+|[ ]+$//gi;

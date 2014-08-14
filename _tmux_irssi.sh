@@ -1,6 +1,6 @@
 #!/bin/bash
 #..--~~--..--~~--..--~~--..--~~--..--~~--..--~~--..--~~--..--~~--..--~~--..--~~--.
-#								TMUX AND IRSSI
+#                                  TMUX AND IRSSI
 #..--~~--..--~~--..--~~--..--~~--..--~~--..--~~--..--~~--..--~~--..--~~--..--~~--.
 #
 # knucker <www.knucker [at] gmail [dot] com> - Thu Aug 14 12:00:00 BRT 2014
@@ -17,35 +17,47 @@
 #
 #..--~~--..--~~--..--~~--..--~~--..--~~--..--~~--..--~~--..--~~--..--~~--..--~~--.
 
+declare SESSION
+declare IRCNAME
+declare SIRC
+declare TMUX
+
 SESSION=${USER} # The name of the session
 IRCNAME=${1}	# The name of the IRC client
+SIRC="IRC"
 
-test -z ${IRCNAME} && IRCNAME='irssi'
-test -z $(which ${IRCNAME}) && echo 'The irc client was not found.' && exit 1
+function tmuxfoo(){
+	test -z ${IRCNAME} && IRCNAME='irssi'
+	test -z $(which ${IRCNAME}) && echo 'The irc client was not found.' && exit 1
+	TMUX=$(which tmux)
+	test -z ${TMUX} && echo 'The tmux was not found.' && exit 1
 
-# If has a session already created
-tmux has-session -t ${SESSION} 2>/dev/null
-if [ $? -eq 0 ]; then
-	echo "The ${SESSION} session already exists."
-	echo -n "Attaching..."
-	sleep 1
-	tmux -2 attach -d -t ${SESSION}
-	exit 0;
-fi
+	# If has a session already created
+	${TMUX} has-session -t ${SESSION} 2>/dev/null
+	if [ $? -eq 0 ]; then
+		echo "The ${SESSION} session already exists."
+		echo -n "Attaching..."
+		sleep 1
+		${TMUX} -2 attach -d -t ${SESSION}
+		exit 0;
+	fi
+	
+	# create a new session and force detach
+	${TMUX} -2 new-session -d -s ${SESSION}
+	
+	${TMUX} set-window-option -t ${SESSION} -g automatic-rename off
+	${TMUX} new-window -t ${SESSION}:0 -k -n ${SIRC} $IRCNAME
+	${TMUX} set-window-option -t ${SESSION}:0 automatic-rename off
+	${TMUX} rename-window -t $SESSION:0 $IRCNAME
+	
+	# keep window open and use respawn-window to restart
+	# tmux set-window-option -t $SESSION:0 remain-on-exit on
+	
+	# all done. select starting window and get to work
+	${TMUX} select-window -t ${SESSION}
+	${TMUX} -2 attach -d -t ${SESSION}
+	
+	exit 0
+}
 
-# create a new session and force detach
-tmux -2 new-session -d -s ${SESSION}
-
-tmux set-window-option -t ${SESSION} -g automatic-rename off
-tmux new-window -t ${SESSION}:0 -k -n IRC $IRCNAME
-tmux set-window-option -t ${SESSION}:0 automatic-rename off
-tmux rename-window -t $SESSION:0 $IRCNAME
-
-# keep window open and use respawn-window to restart
-# tmux set-window-option -t $SESSION:0 remain-on-exit on
-
-# all done. select starting window and get to work
-tmux select-window -t ${SESSION}
-tmux -2 attach -d -t ${SESSION}
-
-exit 0
+[ "${BASH_SOURCE}" == "$0" ] && tmuxfoo
